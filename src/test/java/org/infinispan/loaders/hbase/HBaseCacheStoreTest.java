@@ -1,9 +1,13 @@
 package org.infinispan.loaders.hbase;
 
+import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheStore;
+import org.infinispan.loaders.hbase.configuration.HBaseCacheStoreConfiguration;
+import org.infinispan.loaders.hbase.configuration.HBaseCacheStoreConfigurationBuilder;
+import org.infinispan.loaders.spi.CacheStore;
 import org.infinispan.loaders.hbase.test.HBaseCluster;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -26,14 +30,18 @@ public class HBaseCacheStoreTest extends BaseCacheStoreTest {
    @Override
    protected CacheStore createCacheStore() throws Exception {
       HBaseCacheStore cs = new HBaseCacheStore();
+
       // This uses the default config settings in HBaseCacheStoreConfig
-      HBaseCacheStoreConfig conf = new HBaseCacheStoreConfig();
-      conf.setPurgeSynchronously(true);
+      ConfigurationBuilder cb = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false);
 
-      // overwrite the ZooKeeper client port with the port from the embedded server
-      conf.setHbaseZookeeperPropertyClientPort(hBaseCluster.getZooKeeperPort());
+      HBaseCacheStoreConfiguration storeConfiguration = cb.loaders()
+            .addLoader(HBaseCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true)
+               .hbaseZookeeperClientPort(hBaseCluster.getZooKeeperPort())
+               .create();
 
-      cs.init(conf, getCache(), getMarshaller());
+      cs.init(storeConfiguration, getCache(), getMarshaller());
       cs.start();
       return cs;
    }

@@ -1,5 +1,6 @@
 package org.infinispan.loaders.hbase.configuration;
 
+import junit.framework.Assert;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.loaders.hbase.HBaseCacheStoreConfig;
@@ -24,46 +25,34 @@ public class ConfigurationTest {
       .fetchPersistentState(true).async().enable();
       Configuration configuration = b.build();
       HBaseCacheStoreConfiguration store = (HBaseCacheStoreConfiguration) configuration.loaders().cacheLoaders().get(0);
-      assert !store.autoCreateTable();
-      assert store.entryColumnFamily().equals("ECF");
-      assert store.entryTable().equals("ET");
-      assert store.entryValueField().equals("EVF");
-      assert store.expirationColumnFamily().equals("XCF");
-      assert store.expirationTable().equals("XT");
-      assert store.expirationValueField().equals("XVF");
-      assert store.hbaseZookeeperQuorumHost().equals("myhost");
-      assert store.hbaseZookeeperClientPort() == 4321;
-      assert store.sharedTable();
-      assert store.fetchPersistentState();
-      assert store.async().enabled();
+      Assert.assertFalse(store.autoCreateTable());
+      Assert.assertTrue(store.entryColumnFamily().equals("ECF"));
+      Assert.assertEquals("ET", store.entryTable());
+      Assert.assertEquals("EVF", store.entryValueField());
+      Assert.assertEquals("XT", store.expirationTable());
+      Assert.assertEquals("XCF", store.expirationColumnFamily());
+      Assert.assertEquals("XVF", store.expirationValueField());
+      Assert.assertEquals("myhost", store.hbaseZookeeperQuorumHost());
+      Assert.assertEquals(4321, store.hbaseZookeeperClientPort());
+      Assert.assertTrue(store.sharedTable());
+      Assert.assertTrue(store.fetchPersistentState());
+      Assert.assertTrue(store.async().enabled());
 
       b = new ConfigurationBuilder();
       b.loaders().addStore(HBaseCacheStoreConfigurationBuilder.class).read(store);
       Configuration configuration2 = b.build();
       HBaseCacheStoreConfiguration store2 = (HBaseCacheStoreConfiguration) configuration2.loaders().cacheLoaders().get(0);
-      assert !store2.autoCreateTable();
-      assert store2.entryColumnFamily().equals("ECF");
-      assert store2.entryTable().equals("ET");
-      assert store2.entryValueField().equals("EVF");
-      assert store2.expirationColumnFamily().equals("XCF");
-      assert store2.expirationTable().equals("XT");
-      assert store2.expirationValueField().equals("XVF");
-      assert store2.hbaseZookeeperQuorumHost().equals("myhost");
-      assert store2.hbaseZookeeperClientPort() == 4321;
-      assert store2.sharedTable();
-      assert store2.fetchPersistentState();
-      assert store2.async().enabled();
-
-      HBaseCacheStoreConfig legacy = store.adapt();
-      assert !legacy.isAutoCreateTable();
-      assert legacy.getEntryColumnFamily().equals("ECF");
-      assert legacy.getEntryTable().equals("ET");
-      assert legacy.getEntryValueField().equals("EVF");
-      assert legacy.getExpirationColumnFamily().equals("XCF");
-      assert legacy.getExpirationTable().equals("XT");
-      assert legacy.getExpirationValueField().equals("XVF");
-      assert legacy.getHbaseZookeeperPropertyClientPort() == 4321;
-      assert legacy.isFetchPersistentState();
-      assert legacy.getAsyncStoreConfig().isEnabled();
+      Assert.assertFalse(store2.autoCreateTable());
+      Assert.assertTrue(store2.entryColumnFamily().equals("ECF"));
+      Assert.assertEquals("ET", store2.entryTable());
+      Assert.assertEquals("EVF", store2.entryValueField());
+      Assert.assertEquals("XT", store2.expirationTable());
+      Assert.assertEquals("XCF", store2.expirationColumnFamily());
+      Assert.assertEquals("XVF", store2.expirationValueField());
+      Assert.assertEquals("myhost", store2.hbaseZookeeperQuorumHost());
+      Assert.assertEquals(4321, store2.hbaseZookeeperClientPort());
+      Assert.assertTrue(store2.sharedTable());
+      Assert.assertTrue(store2.fetchPersistentState());
+      Assert.assertTrue(store2.async().enabled());
    }
 }
