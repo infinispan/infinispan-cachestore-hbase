@@ -1,0 +1,15 @@
+= HBase Cache Store
+The Infinispan Community
+:icons: font
+
+== Introduction
+The `HBaseCacheStore` is a cache loader implementation based on 
+link:http://hbase.apache.org/[Apache HBase]. 
+
+== Javadoc
+
+*TODO* 
+
+== Configuration
+
+*TODO* 
