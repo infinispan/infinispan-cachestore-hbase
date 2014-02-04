@@ -14,15 +14,14 @@ import java.util.Set;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
-import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.keymappers.MarshallingTwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.TwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.UnsupportedKeyTypeException;
+import org.infinispan.loaders.spi.AbstractCacheStore;
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.commons.util.Util;
@@ -35,7 +34,6 @@ import org.infinispan.util.logging.LogFactory;
  * @author Justin Hayes
  * @since 5.2
  */
-@CacheLoaderMetadata(configurationClass = HBaseCacheStoreConfig.class)
 public class HBaseCacheStore extends AbstractCacheStore {
    private static final Log log = LogFactory.getLog(HBaseCacheStore.class, Log.class);
 
@@ -55,8 +53,8 @@ public class HBaseCacheStore extends AbstractCacheStore {
    private HBaseFacade hbf;
 
    @Override
-   public void init(CacheLoaderConfig clc, Cache<?, ?> cache, StreamingMarshaller m)
-            throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration clc, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
       super.init(clc, cache, m);
       this.cacheName = cache.getName();
       this.config = (HBaseCacheStoreConfig) clc;
@@ -79,9 +77,9 @@ public class HBaseCacheStore extends AbstractCacheStore {
          expirationValueField = config.expirationValueField;
 
          keyMapper = (TwoWayKey2StringMapper) Util.getInstance(config.getKeyMapper(),
-                  config.getClassLoader());
-         if(keyMapper instanceof MarshallingTwoWayKey2StringMapper) {
-            ((MarshallingTwoWayKey2StringMapper)keyMapper).setMarshaller(getMarshaller());
+               config.getClassLoader());
+         if (keyMapper instanceof MarshallingTwoWayKey2StringMapper) {
+            ((MarshallingTwoWayKey2StringMapper) keyMapper).setMarshaller(getMarshaller());
          }
 
          Map<String, String> props = new HashMap<String, String>();
@@ -95,7 +93,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
       // create the cache store table if necessary
       if (config.autoCreateTable) {
          log.infof("Automatically creating %s and %s tables.", this.entryTable,
-                  this.expirationTable);
+               this.expirationTable);
          // create required HBase structures (table and column families) for the cache
          try {
             List<String> colFamilies = Collections.singletonList(this.entryColumnFamily);
@@ -107,7 +105,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
                log.infof("Not creating %s because it already exists.", this.entryTable);
             } else {
                throw new CacheLoaderException("Got HadoopException while creating the "
-                        + this.entryTable + " cache store table.", ex);
+                     + this.entryTable + " cache store table.", ex);
             }
          }
 
@@ -123,7 +121,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
                log.infof("Not creating %s because it already exists.", this.expirationTable);
             } else {
                throw new CacheLoaderException("Got HadoopException while creating the "
-                        + this.expirationTable + " cache store table.", ex);
+                     + this.expirationTable + " cache store table.", ex);
             }
          }
       }
@@ -139,8 +137,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
     * Stores an entry into the cache. If this entry can expire, it also adds a row to the expiration
     * table so we can purge it later on after it has expired.
     *
-    * @param entry
-    *           the object to store in the cache
+    * @param entry the object to store in the cache
     */
    @Override
    public void store(InternalCacheEntry entry) throws CacheLoaderException {
@@ -155,16 +152,16 @@ public class HBaseCacheStore extends AbstractCacheStore {
          Map<String, byte[]> valMap = Collections.singletonMap(entryValueField, val);
 
          Map<String, Map<String, byte[]>> cfMap = Collections.singletonMap(entryColumnFamily,
-                  valMap);
+               valMap);
 
          hbf.addRow(this.entryTable, hashedKey, cfMap);
 
          // Add a row to the expiration table if necessary
          if (entry.canExpire()) {
             Map<String, byte[]> expValMap = Collections.singletonMap(expirationValueField,
-                     Bytes.toBytes(hashedKey));
+                  Bytes.toBytes(hashedKey));
             Map<String, Map<String, byte[]>> expCfMap = Collections.singletonMap(
-                     expirationColumnFamily, expValMap);
+                  expirationColumnFamily, expValMap);
 
             String expKey = "ts_" + String.valueOf(timeService.wallClockTime());
             String hashedExpKey = hashKey(this.expirationKeyPrefix, expKey);
@@ -183,8 +180,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
    /**
     * Stores an object that has been unmarshalled to a stream into the cache.
     *
-    * @param in
-    *           the object input stream
+    * @param in the object input stream
     */
    @Override
    public void fromStream(ObjectInput in) throws CacheLoaderException {
@@ -193,7 +189,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
          while (true) {
             count++;
             InternalCacheEntry entry = (InternalCacheEntry) getMarshaller().objectFromObjectStream(
-                     in);
+                  in);
             if (entry == null) {
                break;
             }
@@ -214,8 +210,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
    /**
     * Loads all entries from the cache and marshalls them to an object stream.
     *
-    * @param out
-    *           the output stream to marshall the entries to
+    * @param out the output stream to marshall the entries to
     */
    @Override
    public void toStream(ObjectOutput out) throws CacheLoaderException {
@@ -238,8 +233,8 @@ public class HBaseCacheStore extends AbstractCacheStore {
    @Override
    public void clear() throws CacheLoaderException {
       // clear both the entry table and the expiration table
-      String[] tableNames = { this.entryTable, this.expirationTable };
-      String[] keyPrefixes = { this.entryKeyPrefix, this.expirationKeyPrefix };
+      String[] tableNames = {this.entryTable, this.expirationTable};
+      String[] keyPrefixes = {this.entryKeyPrefix, this.expirationKeyPrefix};
 
       for (int i = 0; i < tableNames.length; i++) {
          // get all keys for this table
@@ -254,7 +249,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
             hbf.removeRows(tableNames[i], allKeysHashed);
          } catch (HBaseException ex) {
             log.error("Caught HadoopException clearing the " + tableNames[i] + " table: "
-                     + ex.getMessage());
+                  + ex.getMessage());
             throw new CacheLoaderException(ex);
          }
       }
@@ -263,8 +258,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
    /**
     * Removes an entry from the cache, given its key.
     *
-    * @param key
-    *           the key for the entry to remove.
+    * @param key the key for the entry to remove.
     */
    @Override
    public boolean remove(Object key) throws CacheLoaderException {
@@ -276,15 +270,14 @@ public class HBaseCacheStore extends AbstractCacheStore {
       } catch (HBaseException ex) {
          log.error("HadoopException removing an object from the cache: " + ex.getMessage(), ex);
          throw new CacheLoaderException("HadoopException removing an object from the cache: "
-                  + ex.getMessage(), ex);
+               + ex.getMessage(), ex);
       }
    }
 
    /**
     * Loads an entry from the cache, given its key.
     *
-    * @param key
-    *           the key for the entry to load.
+    * @param key the key for the entry to load.
     */
    @Override
    public InternalCacheEntry load(Object key) throws CacheLoaderException {
@@ -295,7 +288,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
 
       try {
          Map<String, Map<String, byte[]>> resultMap = hbf.readRow(this.entryTable, hashedKey,
-                  colFamilies);
+               colFamilies);
          if (resultMap.isEmpty()) {
             log.debugf("Key %s not found.", hashedKey);
             return null;
@@ -330,8 +323,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
    /**
     * Loads entries from the cache up to a certain number.
     *
-    * @param numEntries
-    *           the max number of entries to load.
+    * @param numEntries the max number of entries to load.
     */
    @Override
    public Set<InternalCacheEntry> load(int numEntries) throws CacheLoaderException {
@@ -363,8 +355,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
    /**
     * Loads all keys from the cache, optionally excluding some.
     *
-    * @param keysToExclude
-    *           a set of keys that should not be returned.
+    * @param keysToExclude a set of keys that should not be returned.
     */
    @Override
    public Set<Object> loadAllKeys(Set<Object> keysToExclude) throws CacheLoaderException {
@@ -372,7 +363,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
    }
 
    private Set<Object> loadAllKeysForTable(String table, Set<Object> keysToExclude)
-            throws CacheLoaderException {
+         throws CacheLoaderException {
       log.debugf("In HBaseCacheStore.loadAllKeys for %s", table);
 
       Set<Object> allKeys = null;
@@ -385,7 +376,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
 
       // unhash the keys
       String keyPrefix = table.equals(this.entryTable) ? this.entryKeyPrefix
-               : this.expirationKeyPrefix;
+            : this.expirationKeyPrefix;
       Set<Object> unhashedKeys = new HashSet<Object>(allKeys.size());
       for (Object hashedKey : allKeys) {
          unhashedKeys.add(unhashKey(keyPrefix, hashedKey));
@@ -400,14 +391,6 @@ public class HBaseCacheStore extends AbstractCacheStore {
    }
 
    /**
-    * Returns the class that represents this cache store's configuration.
-    */
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return HBaseCacheStoreConfig.class;
-   }
-
-   /**
     * Purges any expired entries from the cache.
     */
    @Override
@@ -418,8 +401,8 @@ public class HBaseCacheStore extends AbstractCacheStore {
          // query the expiration table to find out the entries that have been expired
          long ts = timeService.wallClockTime();
          Map<String, Map<String, Map<String, byte[]>>> rowsToPurge = hbf.readRows(
-                  this.expirationTable, this.expirationKeyPrefix, ts, this.expirationColumnFamily,
-                  this.expirationValueField);
+               this.expirationTable, this.expirationKeyPrefix, ts, this.expirationColumnFamily,
+               this.expirationValueField);
 
          Set<Object> keysToDelete = new HashSet<Object>();
          Set<Object> expKeysToDelete = new HashSet<Object>();
@@ -428,7 +411,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
          for (Entry<String, Map<String, Map<String, byte[]>>> entry : rowsToPurge.entrySet()) {
             expKeysToDelete.add(entry.getKey());
             byte[] targetKeyBytes = entry.getValue().get(this.expirationColumnFamily)
-                     .get(this.expirationValueField);
+                  .get(this.expirationValueField);
             String targetKey = Bytes.toString(targetKeyBytes);
             keysToDelete.add(targetKey);
          }
@@ -476,7 +459,7 @@ public class HBaseCacheStore extends AbstractCacheStore {
    }
 
    private InternalCacheEntry unmarshall(Object o, Object key) throws IOException,
-            ClassNotFoundException {
+         ClassNotFoundException {
       if (o == null) {
          return null;
       }

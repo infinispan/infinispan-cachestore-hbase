@@ -2,15 +2,12 @@ package org.infinispan.loaders.hbase.configuration;
 
 import org.infinispan.configuration.cache.AbstractStoreConfiguration;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.hbase.HBaseCacheStoreConfig;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 
 @BuiltBy(HBaseCacheStoreConfigurationBuilder.class)
-public class HBaseCacheStoreConfiguration extends AbstractStoreConfiguration implements LegacyLoaderAdapter<HBaseCacheStoreConfig> {
+public class HBaseCacheStoreConfiguration extends AbstractStoreConfiguration {
 
    private final boolean autoCreateTable;
    private final String entryColumnFamily;
@@ -85,26 +82,4 @@ public class HBaseCacheStoreConfiguration extends AbstractStoreConfiguration imp
    public boolean sharedTable() {
       return sharedTable;
    }
-
-   @Override
-   public HBaseCacheStoreConfig adapt() {
-      HBaseCacheStoreConfig config = new HBaseCacheStoreConfig();
-
-      LegacyConfigurationAdaptor.adapt(this, config);
-
-      config.setAutoCreateTable(autoCreateTable);
-      config.setEntryColumnFamily(entryColumnFamily);
-      config.setEntryTable(entryTable);
-      config.setEntryValueField(entryValueField);
-      config.setExpirationColumnFamily(expirationColumnFamily);
-      config.setExpirationTable(expirationTable);
-      config.setExpirationValueField(expirationValueField);
-      config.setHbaseZookeeperPropertyClientPort(hbaseZookeeperClientPort);
-      config.setHbaseZookeeperQuorum(hbaseZookeeperQuorumHost);
-      config.setKeyMapper(keyMapper);
-      config.setSharedTable(sharedTable);
-
-      return config;
-   }
-
 }
